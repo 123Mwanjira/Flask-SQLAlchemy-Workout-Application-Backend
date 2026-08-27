@@ -12,6 +12,19 @@ class Exercise(db.Model):
     category = db.Column(db.String, nullable=False)
     equipment_needed = db.Column(db.Boolean, nullable=False)
 
+    workout_exercises = db.relationship(
+        "WorkoutExercise",
+        back_populates="exercise",
+        cascade="all, delete-orphan"
+    )
+
+    workouts = db.relationship(
+        "Workout",
+        secondary="workout_exercises",
+        back_populates="exercises",
+        viewonly=True
+    )
+
 
 class Workout(db.Model):
     __tablename__ = "workouts"
@@ -20,6 +33,19 @@ class Workout(db.Model):
     date = db.Column(db.Date, nullable=False)
     duration_minutes = db.Column(db.Integer, nullable=False)
     notes = db.Column(db.Text, nullable=True)
+
+    workout_exercises = db.relationship(
+        "WorkoutExercise",
+        back_populates="workout",
+        cascade="all, delete-orphan"
+    )
+
+    exercises = db.relationship(
+        "Exercise",
+        secondary="workout_exercises",
+        back_populates="workouts",
+        viewonly=True
+    )
 
 
 class WorkoutExercise(db.Model):
@@ -42,3 +68,13 @@ class WorkoutExercise(db.Model):
     reps = db.Column(db.Integer, nullable=True)
     sets = db.Column(db.Integer, nullable=True)
     duration_seconds = db.Column(db.Integer, nullable=True)
+
+    workout = db.relationship(
+        "Workout",
+        back_populates="workout_exercises"
+    )
+
+    exercise = db.relationship(
+        "Exercise",
+        back_populates="workout_exercises"
+    )
