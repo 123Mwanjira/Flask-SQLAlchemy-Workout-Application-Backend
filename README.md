@@ -1,21 +1,25 @@
 # Flask SQLAlchemy Workout Application Backend
 
-A RESTful backend API for managing workouts, exercises, and the relationship between workouts and exercises. The application is built with Flask, Flask-SQLAlchemy, Flask-Migrate, Marshmallow, and SQLite.
+A RESTful backend API for a workout tracking application used by personal trainers. The application manages reusable exercises, workouts, and the relationship between workouts and exercises.
+
+The backend is built with Flask, Flask-SQLAlchemy, Flask-Migrate, Marshmallow, SQLite, and Pipenv.
 
 ## Features
 
-* Create and retrieve exercises
-* Retrieve an individual exercise
-* Update an exercise using PATCH
-* Delete an exercise
-* Create and retrieve workouts
-* Retrieve a workout together with its exercises
+* Create, view, update, and delete exercises
+* Create, view, and delete workouts
 * Add exercises to workouts
-* Marshmallow serialization and schema validation
-* SQLAlchemy model validations
+* View an exercise together with its associated workouts
+* View a workout together with its associated exercises
+* Store reps, sets, and duration for exercises within workouts
+* Marshmallow serialization and deserialization
+* Marshmallow schema validation
+* SQLAlchemy model-level validation
 * Database-level table constraints
-* Database migrations using Flask-Migrate
+* Foreign-key relationships between models
+* Database migrations using Flask-Migrate and Alembic
 * Seed data for exercises, workouts, and workout exercises
+* Clean separation of models, schemas, application routes, and seed data
 
 ## Technologies Used
 
@@ -27,10 +31,11 @@ A RESTful backend API for managing workouts, exercises, and the relationship bet
 * SQLite
 * Pipenv
 * Alembic
+* Git and GitHub
 
 ## Project Structure
 
-```text
+text
 Flask-SQLAlchemy-Workout-Application-Backend/
 ├── migrations/
 │   ├── versions/
@@ -44,187 +49,333 @@ Flask-SQLAlchemy-Workout-Application-Backend/
 │   └── seed.py
 ├── Pipfile
 ├── Pipfile.lock
-└── README.md
+├── README.md
+└── .gitignore
 ```
 
 ## Installation
 
-Clone the repository and enter the project directory:
+Clone the repository:
 
 ```bash
 git clone https://github.com/123Mwanjira/Flask-SQLAlchemy-Workout-Application-Backend.git
 cd Flask-SQLAlchemy-Workout-Application-Backend
-```
+
 
 Install the project dependencies using Pipenv:
 
-```bash
+bash
 pipenv install
-```
+
 
 Activate the virtual environment:
 
-```bash
+bash
 pipenv shell
-```
+
 
 Set the Flask application:
 
-```bash
+bash
 export FLASK_APP=server/app.py
-```
+
 
 ## Database Setup
 
-Apply the existing database migrations:
+Apply the existing database migration:
 
-```bash
+bash
 flask db upgrade
-```
 
-To check the current migration:
 
-```bash
+Check the current migration:
+
+bash
 flask db current
-```
 
-The application should report the current migration revision.
+
+The database should report the current migration revision.
+
+To create a new migration after making model changes:
+
+bash
+flask db migrate -m "describe the change"
+
+
+Then apply it:
+
+bash
+flask db upgrade
+
 
 ## Seed the Database
 
-Populate the database with starter data:
+The project includes a seed file that creates starter records for all three models:
 
-```bash
+* Exercises
+* Workouts
+* WorkoutExercises
+
+Run:
+
+bash
 python server/seed.py
-```
 
-The seed file creates starter records for exercises, workouts, and workout exercises.
+
+The seed file clears existing workout-exercise, workout, and exercise records before creating the starter data. This allows the database to be reset and reseeded without creating duplicate starter records.
+
+Expected output:
+
+text
+Database seeded successfully!
+
 
 ## Running the Application
 
 Start the Flask development server:
 
-```bash
+bash
 flask run --port 5555
-```
+
 
 The API will be available at:
 
-```text
+text
 http://127.0.0.1:5555
-```
 
 Alternatively, the application can be started directly with:
 
-```bash
+bash
 python server/app.py
-```
+
+
+## Data Models
+
+### Exercise
+
+| Field              | Type    | Description                   |
+| ------------------ | ------- | ----------------------------- |
+| `id`               | Integer | Primary key                   |
+| `name`             | String  | Exercise name                 |
+| `category`         | String  | Exercise category             |
+| `equipment_needed` | Boolean | Whether equipment is required |
+
+### Workout
+
+| Field              | Type    | Description            |
+| ------------------ | ------- | ---------------------- |
+| `id`               | Integer | Primary key            |
+| `date`             | Date    | Workout date           |
+| `duration_minutes` | Integer | Workout duration       |
+| `notes`            | Text    | Optional workout notes |
+
+### WorkoutExercise
+
+| Field              | Type    | Description                  |
+| ------------------ | ------- | ---------------------------- |
+| `id`               | Integer | Primary key                  |
+| `workout_id`       | Integer | Foreign key to Workout       |
+| `exercise_id`      | Integer | Foreign key to Exercise      |
+| `reps`             | Integer | Number of repetitions        |
+| `sets`             | Integer | Number of sets               |
+| `duration_seconds` | Integer | Exercise duration in seconds |
+
+## Relationships
+
+The application implements the following relationships:
+
+* A `WorkoutExercise` belongs to a `Workout`.
+* A `WorkoutExercise` belongs to an `Exercise`.
+* A `Workout` has many `WorkoutExercises`.
+* An `Exercise` has many `WorkoutExercises`.
+* A `Workout` has many `Exercises` through `WorkoutExercises`.
+* An `Exercise` has many `Workouts` through `WorkoutExercises`.
 
 ## API Endpoints
 
 ### Exercises
 
-| Method | Endpoint                   | Description        |
-| ------ | -------------------------- | ------------------ |
-| GET    | `/exercises`               | Get all exercises  |
-| POST   | `/exercises`               | Create an exercise |
-| GET    | `/exercises/<exercise_id>` | Get one exercise   |
-| PATCH  | `/exercises/<exercise_id>` | Update an exercise |
-| DELETE | `/exercises/<exercise_id>` | Delete an exercise |
+| Method | Endpoint                   | Description                                  |
+| ------ | -------------------------- | -------------------------------------------- |
+| GET    | `/exercises`               | List all exercises                           |
+| GET    | `/exercises/<exercise_id>` | Show an exercise and its associated workouts |
+| POST   | `/exercises`               | Create an exercise                           |
+| PATCH  | `/exercises/<exercise_id>` | Update an exercise                           |
+| DELETE | `/exercises/<exercise_id>` | Delete an exercise                           |
 
 ### Workouts
 
-| Method | Endpoint                 | Description                        |
-| ------ | ------------------------ | ---------------------------------- |
-| GET    | `/workouts`              | Get all workouts                   |
-| POST   | `/workouts`              | Create a workout                   |
-| GET    | `/workouts/<workout_id>` | Get one workout with its exercises |
+| Method | Endpoint                 | Description                                 |
+| ------ | ------------------------ | ------------------------------------------- |
+| GET    | `/workouts`              | List all workouts                           |
+| GET    | `/workouts/<workout_id>` | Show a workout and its associated exercises |
+| POST   | `/workouts`              | Create a workout                            |
+| DELETE | `/workouts/<workout_id>` | Delete a workout                            |
 
 ### Workout Exercises
 
-| Method | Endpoint                           | Description                  |
-| ------ | ---------------------------------- | ---------------------------- |
-| POST   | `/workouts/<workout_id>/exercises` | Add an exercise to a workout |
+| Method | Endpoint                                                           | Description                                                   |
+| ------ | ------------------------------------------------------------------ | ------------------------------------------------------------- |
+| POST   | `/workouts/<workout_id>/exercises/<exercise_id>/workout_exercises` | Add an exercise to a workout with reps, sets, and/or duration |
 
 ## Example Requests
 
-Create an exercise:
+### Create an Exercise
 
 ```bash
 curl -X POST http://127.0.0.1:5555/exercises \
 -H "Content-Type: application/json" \
 -d '{"name":"Bench Press","category":"Strength","equipment_needed":true}'
-```
 
-Create a workout:
+
+### Create a Workout
 
 ```bash
 curl -X POST http://127.0.0.1:5555/workouts \
 -H "Content-Type: application/json" \
 -d '{"date":"2026-08-30","duration_minutes":60,"notes":"Evening workout"}'
-```
 
-Add an exercise to a workout:
 
-```bash
-curl -X POST http://127.0.0.1:5555/workouts/1/exercises \
+### Add an Exercise to a Workout
+
+bash
+curl -X POST http://127.0.0.1:5555/workouts/1/exercises/2/workout_exercises \
 -H "Content-Type: application/json" \
--d '{"exercise_id":1,"reps":10,"sets":3}'
-```
+-d '{"reps":12,"sets":3}'
 
-Get a workout with its exercises:
 
-```bash
+### Get All Exercises
+
+bash
+curl http://127.0.0.1:5555/exercises
+
+
+### Get One Exercise with Associated Workouts
+
+bash
+curl http://127.0.0.1:5555/exercises/1
+
+
+### Get All Workouts
+
+bash
+curl http://127.0.0.1:5555/workouts
+
+
+### Get One Workout with Associated Exercises
+
+bash
 curl http://127.0.0.1:5555/workouts/1
-```
+
+
+### Delete an Exercise
+bash
+curl -X DELETE http://127.0.0.1:5555/exercises/1
+
+
+### Delete a Workout
+
+bash
+curl -X DELETE http://127.0.0.1:5555/workouts/1
+
 
 ## Validation
 
-The application uses Marshmallow schema validation to ensure that incoming data meets the required rules.
+The application validates data at multiple levels.
+
+### Schema Validations
+
+Marshmallow validates incoming API requests.
+
+Examples include:
+
+* Exercise `name` is required and cannot be empty.
+* Exercise `category` is required and cannot be empty.
+* `equipment_needed` must be a boolean.
+* Workout `date` is required.
+* Workout `duration_minutes` must be at least 1.
+* `reps` cannot be negative.
+* `sets` cannot be negative.
+* `duration_seconds` cannot be negative.
+
+Invalid input returns a `400 Bad Request` response containing validation errors.
+
+### Model Validations
+
+SQLAlchemy model validators provide additional protection against invalid data.
 
 Examples include:
 
 * Exercise names cannot be empty.
-* Exercise categories are required.
-* Workout dates are required.
-* Workout duration must be at least 1 minute.
+* Exercise categories cannot be empty.
+* Workout duration must be greater than zero.
 * Repetitions cannot be negative.
 * Sets cannot be negative.
 * Exercise duration cannot be negative.
 
-The application also uses SQLAlchemy model validations and database-level `CheckConstraint`s to protect data integrity.
+### Database Table Constraints
+
+Database-level `CheckConstraint`s provide an additional layer of data integrity.
+
+The database enforces constraints including:
+
+* Exercise names cannot contain only whitespace.
+* Exercise categories cannot contain only whitespace.
+* Workout duration must be greater than zero.
+* Repetitions must be non-negative when provided.
+* Sets must be non-negative when provided.
+* Exercise duration must be non-negative when provided.
+
+## Error Handling
+
+The API returns appropriate HTTP status codes for common situations.
+
+Examples:
+
+* `200 OK` — Successful GET, PATCH, or DELETE operation.
+* `201 Created` — Successfully created a new resource.
+* `400 Bad Request` — Invalid request data.
+* `404 Not Found` — Requested workout or exercise does not exist.
+
+Example:
+
+```json
+{
+  "error": "Exercise not found"
+}
+```
 
 ## Database Migrations
 
-Flask-Migrate is used to manage database schema changes.
+Flask-Migrate and Alembic are used to manage database schema changes.
 
-Create a new migration after changing the models:
-
-```bash
-flask db migrate -m "describe the change"
-```
-
-Apply migrations:
-
-```bash
-flask db upgrade
-```
-
-Check the current migration:
+Current migration can be checked with:
 
 ```bash
 flask db current
 ```
 
+The existing migration creates:
+
+* `exercises`
+* `workouts`
+* `workout_exercises`
+
+The migration also includes the database-level validation constraints.
+
 ## Git Workflow
 
-The project uses feature branches and meaningful commits. The current development branch is:
+The project uses Git feature branches and meaningful commits.
+
+Development was completed on:
 
 ```text
 feature/setup
 ```
 
-Changes are committed regularly and pushed to the remote repository.
+Changes were committed and pushed regularly to GitHub.
+
+The final completed version should be merged into the `main` branch for submission.
 
 ## Author
 
